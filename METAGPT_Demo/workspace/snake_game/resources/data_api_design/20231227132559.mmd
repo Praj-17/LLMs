@@ -1,0 +1,27 @@
+classDiagram
+    class Main {
+        -Game game
+        +main() str
+    }
+    class Game {
+        -Snake snake
+        -Food food
+        -Leaderboard leaderboard
+        +start_game() str
+        +end_game() str
+    }
+    class Snake {
+        +move() str
+        +eat() str
+    }
+    class Food {
+        +generate_food() str
+    }
+    class Leaderboard {
+        +update_leaderboard() str
+        +display_leaderboard() str
+    }
+    Main --> Game
+    Game --> Snake
+    Game --> Food
+    Game --> Leaderboard

@@ -1,0 +1,20 @@
+classDiagram
+    class Main {
+        -MCQGenerator mcq_generator
+        -UI ui
+        +main() str
+    }
+    class MCQGenerator {
+        -questions list
+        -options list
+        +generate_mcq(number: int, type: str) list
+        +customize_mcq(number: int, type: str) list
+    }
+    class UI {
+        -MCQGenerator mcq_generator
+        +display_mcq(mcq: list)
+        +get_user_input() dict
+    }
+    Main --> MCQGenerator
+    Main --> UI
+    UI --> MCQGenerator

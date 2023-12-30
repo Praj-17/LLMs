@@ -1,0 +1,102 @@
+[
+    {
+        "question": "What is the term for the process of excreting ammonia?",
+        "options": [
+            "Uricotelism",
+            "Ureotelism",
+            "Ammonotelism",
+            "None of the above"
+        ],
+        "answer": "Ammonotelism"
+    },
+    {
+        "question": "Which of the following animals are primarily ureotelic?",
+        "options": [
+            "Bony fishes",
+            "Reptiles",
+            "Mammals",
+            "Birds"
+        ],
+        "answer": "Mammals"
+    },
+    {
+        "question": "What is the role of the Henle’s loop in the nephron?",
+        "options": [
+            "It helps to maintain osmolar gradient within the kidney interstitium.",
+            "It facilitates the reabsorption of water.",
+            "It filters the blood to form urine.",
+            "It secretes hormones to regulate kidney function."
+        ],
+        "answer": "It helps to maintain osmolar gradient within the kidney interstitium."
+    },
+    {
+        "question": "What is the function of the Antennal glands in crustaceans?",
+        "options": [
+            "Digestion",
+            "Excretion",
+            "Reproduction",
+            "Respiration"
+        ],
+        "answer": "Excretion"
+    },
+    {
+        "question": "What is the primary excretory structure in insects such as cockroaches?",
+        "options": [
+            "Nephridia",
+            "Malpighian tubules",
+            "Protonephridia",
+            "Antennal glands"
+        ],
+        "answer": "Malpighian tubules"
+    },
+    {
+        "question": "What is the role of the hormone ADH in the human excretory system?",
+        "options": [
+            "It facilitates the reabsorption of water from distal parts of the tubules.",
+            "It stimulates the production of urine.",
+            "It regulates the excretion of nitrogenous wastes.",
+            "It controls the blood pressure."
+        ],
+        "answer": "It facilitates the reabsorption of water from distal parts of the tubules."
+    },
+    {
+        "question": "What is the term for the excretory structures in Platyhelminthes, rotifers, some annelids and the cephalochordate – Amphioxus?",
+        "options": [
+            "Nephridia",
+            "Malpighian tubules",
+            "Protonephridia",
+            "Antennal glands"
+        ],
+        "answer": "Protonephridia"
+    },
+    {
+        "question": "What is the function of the ascending limb of Henle’s loop?",
+        "options": [
+            "It is permeable to water.",
+            "It is impermeable to water.",
+            "It facilitates the reabsorption of electrolytes.",
+            "It secretes hormones to regulate kidney function."
+        ],
+        "answer": "It is impermeable to water."
+    },
+    {
+        "question": "What is the function of the descending limb of Henle’s loop?",
+        "options": [
+            "It is permeable to water.",
+            "It is impermeable to water.",
+            "It facilitates the reabsorption of electrolytes.",
+            "It secretes hormones to regulate kidney function."
+        ],
+        "answer": "It is permeable to water."
+    },
+    {
+        "question": "What does the dialysis fluid lack compared to the plasma?",
+        "options": [
+            "Water",
+            "Electrolytes",
+            "Nitrogenous wastes",
+            "Proteins"
+        ],
+        "answer": "Nitrogenous wastes"
+    }
+]

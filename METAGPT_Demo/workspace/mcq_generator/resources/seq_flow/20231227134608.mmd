@@ -1,0 +1,11 @@
+sequenceDiagram
+    participant M as Main
+    participant MG as MCQGenerator
+    participant UI as UI
+    M->>MG: generate_mcq(number, type)
+    MG-->>M: return mcq
+    M->>UI: display_mcq(mcq)
+    UI->>M: get_user_input()
+    M->>MG: customize_mcq(number, type)
+    MG-->>M: return customized_mcq
+    M->>UI: display_mcq(customized_mcq)
