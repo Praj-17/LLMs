@@ -21,8 +21,6 @@
 
 
 import requests
-from io import BytesIO
-
 
 # text_splitter = TokenTextSplitter(chunk_size=10, chunk_overlap=0)
 
@@ -136,6 +134,7 @@ class TexttoQuestions:
             return ""
         from langchain.chains import RetrievalQA
         from langchain.llms import OpenAI   
+
         # chunks = get_data_chunks(data, chunk_size=chunk_size)  # create text chunks
         # knowledge_hub = create_knowledge_hub(chunks)  # create knowledge hub
 
@@ -171,17 +170,17 @@ class TexttoQuestions:
         for line in lines:
             if line.startswith('Question:'):
                 # This is a question, so add it to the questions list
-                questions.append((line[len('Question: '):]).strip())
+                questions.append((line[len('Question: '):]).strip().strip('"'))
             elif line.startswith('Options:'):
                         # This is the start of the options, so clear the current options list
                         current_options = []
             elif line.startswith('Answer:'):
                 # This is an answer, so add the current options to the options list and the answer to the answers list
                 options.append(current_options)
-                answers.append((line[len('Answer: '):]).strip())
+                answers.append((line[len('Answer: '):]).strip().strip('"'))
             elif line.startswith(('a)', 'b)', 'c)', 'd)')):
                 # This is an option, so add it to the current options list
-                current_options.append((line[len('a)'):]).strip())
+                current_options.append((line[len('a)'):]).strip().strip('"'))
 
         # Return the questions, options, and answers as a list of dictionaries
         return [{'question': q, 'options': o, 'answer': a} for q, o, a in zip(questions, options, answers)]
@@ -203,6 +202,7 @@ class TexttoQuestions:
 
 class QuestionGenerator():
     def __init__(self) -> None:
+        print("initializing generator")
         self.url_to_pdf = URLtoPDF()
         self.pdf_to_text = PDFtoText()
         self.text_to_questions = TexttoQuestions()
@@ -218,7 +218,7 @@ class QuestionGenerator():
         return(questions)
     def generate_mcq_questions_page_interval(self,url,page_number, interval, n):
         byte_array = self.url_to_pdf.download_file_from_url(url)
-        text = self.pdf_to_text.extract_all_text(pdf = byte_array, page_number = page_number, interval = interval)
+        text = self.pdf_to_text.extract_text_from_interval(pdf = byte_array, page_number = page_number, interval = interval)
         questions = self.text_to_questions.get_mcq_questions(n,text)
         return(questions)
 
