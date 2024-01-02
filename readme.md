@@ -1,5 +1,18 @@
 # Application Documentation
 
+## Setup
+
+1. Install Python==3.9.0 (Prefferably)
+2. Install requirements (by navigating to the folder)
+```
+    pip install -r requirements.text
+```
+
+3. run the app
+```
+    python app.py
+```
+
 HOST 
 `http://127.0.0.1:8000` (localhost)
 
