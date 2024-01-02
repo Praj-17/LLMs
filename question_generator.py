@@ -35,18 +35,26 @@ class URLtoPDF:
         except IndexError:
             raise Exception("Invalid Google Drive link.")
 
-    def download_file_from_google_drive(self,file_id):
+    def download_file_from_url(self,entire_url):
         
-        URL = self.url + file_id # downloading the pdf from gdrive
-        response = requests.get(URL, stream=True)
+        if entire_url.startswith(self.url):
+            file_id = self.extract_file_id(entire_url)
+            URL = self.url + file_id # downloading the pdf from gdrive
+        URL = entire_url
+        try:
+            response = requests.get(URL)
+            print(response)
+        except Exception as e:
+            print(str(e))
 
         if response.status_code == 200:
             return response.content# loading the file in memory
         else:
-            raise Exception("Failed to download the file from Google Drive.")
-    def download_file_from_url(self, entire_url):
-        file_id = self.extract_file_id(entire_url)
-        return self.download_file_from_google_drive(file_id)    
+            print("exception")
+            print(response.status_code)
+            print(response.json())
+            print("exception Done")
+            raise Exception("Failed to download the file from Google Drive.")   
 
 class PDFtoText:
     def __init__(self) -> None:
@@ -246,7 +254,7 @@ if __name__ == '__main__':
 #  print(questions)
     generator = QuestionGenerator()
     # generator.generate_mcq_questions("https://drive.google.com/file/d/1TGEgTeDQAS2NyS36_KXv1ZyIcA0tFTvr/view?usp=drive_link")
-    questions = generator.generate_mcq_questions_all_text(url = "https://drive.google.com/file/d/1TGEgTeDQAS2NyS36_KXv1ZyIcA0tFTvr/view?usp=drive_link", n = 10)
+    questions = generator.generate_mcq_questions_all_text(url = "https://ncert.nic.in/textbook/pdf/kebo116.pdf", n = 10)
     print(questions)
 
 
