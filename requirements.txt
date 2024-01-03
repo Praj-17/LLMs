@@ -7,3 +7,4 @@ faiss-cpu==1.7.4
 fastapi==0.106.0
 uvicorn==0.25.0
 tiktoken==0.4.0
+flask==3.0.0

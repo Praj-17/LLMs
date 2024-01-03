@@ -1,91 +1,75 @@
-from fastapi import FastAPI, HTTPException
+from flask import Flask, request, jsonify
 from question_generator import QuestionGenerator
-from pydantic import BaseModel
-from typing import Union
 from enum import Enum
-from fastapi.responses import JSONResponse
 
+app = Flask(__name__)
+generator = QuestionGenerator()
 
-class Modes(str, Enum):
+class Modes(Enum):
     CHOICE1 = "all"
     CHOICE2 = "single"
     CHOICE3 = "interval"
 
-class status(str, Enum):
+class Status(Enum):
     CHOICE1 = True
     CHOICE2 = False
 
-app = FastAPI()
-global generator 
+class ReturnType:
+    def __init__(self, status, reason, questions):
+        self.status = status
+        self.reason = reason
+        self.questions = questions
 
-class ReturnType(BaseModel):
-     status:status 
-     reason: str
-     questions: list
+class InputData:
+    def __init__(self, mode, url, num_questions, page_number=None, interval=1):
+        self.mode = mode
+        self.url = url
+        self.num_questions = num_questions
+        self.page_number = page_number
+        self.interval = interval
 
-
-class InputData(BaseModel):
-    # Define the input data model using Pydantic
-    mode: Modes
-    url : str
-    num_questions :str
-    page_number: Union[int, None] = None
-    interval:  Union[int, None] = 1
-
-# def generate_functions(input_data: InputData):
-#     status = False
-#     reason = ""
-#     questions = []
-#     try:
-#         questions = generator.generate_mcq_questions_all_text(url=input_data.url, n =input_data.num_questions )
-#         status = True
-        
-#     except Exception as e:
-#         reason = "Exception" + str(e)
-#     return status, reason,questions
-
-
-@app.post("/get_mcq_questions")
-async def run_function(input_data: InputData):
+@app.route("/", methods=["POST"])
+def run_function():
+    data = request.json
+    print("entered")
+    # data = []
     questions = []
     status = False
     reason = ""
-    url = input_data.url
-    num = input_data.num_questions
+    url = data["url"]
+    num = data["num_questions"]
+    if request.method == 'POST':
 
-
-    try:
-        if input_data.mode == 'all':
-            questions = generator.generate_mcq_questions_all_text(url=url, n = num)
-            status  =  True
-        elif input_data.page_number:
-            if input_data.mode == 'single':
-                
-                    questions = generator.generate_mcq_questions_single_page(url=url, page_number=input_data.page_number, n = num)
+        try:
+            if data["mode"] == 'all':
+                questions = generator.generate_mcq_questions_all_text(url=url, n=num)
+                status = True
+            elif data.get("page_number"):
+                if data["mode"] == 'single':
+                    questions = generator.generate_mcq_questions_single_page(url=url, page_number=data["page_number"], n=num)
                     status = True
-                   
-            elif input_data.mode == 'interval':
-                    questions = generator.generate_mcq_questions_page_interval(url = url, page_number=input_data.page_number, n= num, interval = input_data.interval)
+                elif data["mode"] == 'interval':
+                    questions = generator.generate_mcq_questions_page_interval(url=url, page_number=data["page_number"], n=num, interval=data["interval"])
                     status = True
-        else:
-            reason = "Please provide a param page_number"
+            else:
+                reason = "Please provide a param page_number"
 
-        print(questions)
+            print(questions)
+        except Exception as e:
+            reason = "Exception " + str(e)
 
-        # return result
-    except HTTPException as e:
-        reason = "Exception " + str(e.detail)
-        # return {"error": e.detail}
-    except Exception as e:
-        reason = "Exception " + str(e)
-        # return {"error": str(e)}
-    return JSONResponse({
-         'status':status,
-         'reason': reason,
-         'questions': questions
-    })
+        return jsonify({
+            'status': status,
+            'reason': reason,
+            'questions': questions
+        })
+@app.route("/hello", methods=["GET"])
+def hello_world():
+    return jsonify({
+            'status': True,
+            'reason': ""
+        }) 
 
 if __name__ == "__main__":
-    import uvicorn
     generator = QuestionGenerator()
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    app.run(debug=True, host='127.0.0.1', port=8000)
