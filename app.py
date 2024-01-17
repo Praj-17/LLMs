@@ -34,7 +34,7 @@ def run_function():
     print("entered")
     # data = []
     questions = []
-    status = False
+    status = True
     reason = ""
     url = data["url"]
     num = data["num_questions"]
@@ -43,14 +43,14 @@ def run_function():
         try:
             if data["mode"] == 'all':
                 questions = generator.generate_mcq_questions_all_text(url=url, n=num)
-                status = True
+                status = False
             elif data.get("page_number"):
                 if data["mode"] == 'single':
                     questions = generator.generate_mcq_questions_single_page(url=url, page_number=data["page_number"], n=num)
-                    status = True
+                    status = False
                 elif data["mode"] == 'interval':
                     questions = generator.generate_mcq_questions_page_interval(url=url, page_number=data["page_number"], n=num, interval=data["interval"])
-                    status = True
+                    status = False
             else:
                 reason = "Please provide a param page_number"
 
@@ -58,10 +58,16 @@ def run_function():
         except Exception as e:
             reason = "Exception " + str(e)
 
+        if status == False:
+            message = "Success"
+        else:
+            message = "Failure"
+
         return jsonify({
-            'status': status,
+            'error': status,
             'reason': reason,
-            'questions': questions
+            'message': message,
+            'data': questions
         })
 @app.route("/hello", methods=["GET"])
 def hello_world():

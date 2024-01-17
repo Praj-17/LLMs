@@ -21,6 +21,7 @@
 
 
 import requests
+import os
 
 # text_splitter = TokenTextSplitter(chunk_size=10, chunk_overlap=0)
 
@@ -28,18 +29,25 @@ class URLtoPDF:
     def __init__(self) -> None:
           pass
           self.url = "https://drive.google.com/uc?id="
+          self.default_save_path = r"pdfs/"
     def extract_file_id(self, url):
         try: 
             file_id = url.split("/file/d/")[1].split("/view")[0] # to get the code of google drive
             return file_id
         except IndexError:
             raise Exception("Invalid Google Drive link.")
+    def get_filename(self, url):
+        return url.split("/")[-1]
 
-    def download_file_from_url(self,entire_url):
+
+    def download_file_from_url(self,entire_url,):
+        if not os.path.exists(self.default_save_path):
+            os.makedirs(self.default_save_path)
         
+        file_name = self.get_filename(entire_url)
         if entire_url.startswith(self.url):
             file_id = self.extract_file_id(entire_url)
-            URL = self.url + file_id # downloading the pdf from gdrive
+            URL = self.url + file_id #downloading the pdf from gdrive
         URL = entire_url
         try:
             response = requests.get(URL)
@@ -48,13 +56,36 @@ class URLtoPDF:
             print(str(e))
 
         if response.status_code == 200:
-            return response.content# loading the file in memory
+            file_path = os.path.join(self.default_save_path, file_name)
+            # Save the PDF to the local folder
+            with open(file_path, 'wb') as file:
+                file.write(response.content)
+
+            print(f"PDF downloaded and saved to {file_path}")
+            return file_path
         else:
+            print(f"Failed to download PDF. Status code: {response.status_code}")
             print("exception")
             print(response.status_code)
             print(response.json())
             print("exception Done")
-            raise Exception("Failed to download the file from Google Drive.")   
+            raise Exception("Failed to download the file from Google Drive.")
+    def check_existing_files(self,entire_url):
+        file_name = self.get_filename(entire_url)
+        file_path = os.path.join(self.default_save_path, file_name)
+        print(file_path)
+        if os.path.exists(file_path):
+            return True, file_path
+
+        else:
+            print("entered else")
+            return False,file_path
+
+
+
+
+
+ 
 
 class PDFtoText:
     def __init__(self) -> None:
@@ -64,7 +95,7 @@ class PDFtoText:
         import fitz 
         import os
         if os.path.exists(str(pdf)) or isinstance(pdf,bytes):
-                self.pdf = fitz.open('pdf',pdf)
+                self.pdf = fitz.open(pdf)
                 self.page_count = self.pdf.page_count
                 return self.pdf
                 # self.pdf.close()
@@ -172,7 +203,7 @@ class TexttoQuestions:
         answers = []
 
         # Initialize a list to hold the current question's options
-        current_options = []
+        current_options = {}
 
         # Iterate over the lines
         for line in lines:
@@ -181,14 +212,23 @@ class TexttoQuestions:
                 questions.append((line[len('Question: '):]).strip().strip('"'))
             elif line.startswith('Options:'):
                         # This is the start of the options, so clear the current options list
-                        current_options = []
+                        current_options = {}
             elif line.startswith('Answer:'):
                 # This is an answer, so add the current options to the options list and the answer to the answers list
                 options.append(current_options)
                 answers.append((line[len('Answer: '):]).strip().strip('"'))
             elif line.startswith(('a)', 'b)', 'c)', 'd)')):
                 # This is an option, so add it to the current options list
-                current_options.append((line[len('a)'):]).strip().strip('"'))
+                    if line.startswith('a)'):
+                        current_options['a'] = ((line[len('a)'):]).strip().strip('"'))
+                    elif line.startswith('b)'):
+                        current_options['b'] = ((line[len('b)'):]).strip().strip('"'))
+                    elif line.startswith('c)'):
+                        current_options['c'] = ((line[len('c)'):]).strip().strip('"'))
+                    elif line.startswith('d)'):
+                        current_options['d'] = ((line[len('d)'):]).strip().strip('"'))
+                    
+                # current_options.append((line[len('a)'):]).strip().strip('"'))
 
         # Return the questions, options, and answers as a list of dictionaries
         return [{'question': q, 'options': o, 'answer': a} for q, o, a in zip(questions, options, answers)]
@@ -215,18 +255,32 @@ class QuestionGenerator():
         self.pdf_to_text = PDFtoText()
         self.text_to_questions = TexttoQuestions()
     def generate_mcq_questions_all_text(self,url,n):
-        byte_array = self.url_to_pdf.download_file_from_url(url)
-        text = self.pdf_to_text.extract_all_text(pdf = byte_array)
+        #check if the file is already downloaded
+        
+        check, file_path = self.url_to_pdf.check_existing_files(url)
+        if not check:
+            file_path = self.url_to_pdf.download_file_from_url(url)
+        text = self.pdf_to_text.extract_all_text(pdf=file_path)
+
         questions = self.text_to_questions.get_mcq_questions(n,text)
         return(questions)
     def generate_mcq_questions_single_page(self,url,page_number, n):
-        byte_array = self.url_to_pdf.download_file_from_url(url)
-        text = self.pdf_to_text.extract_text_from_single_page(pdf = byte_array, page_number=page_number)
+        check, file_path = self.url_to_pdf.check_existing_files(url)
+        if not check:
+            file_path = self.url_to_pdf.download_file_from_url(url)
+        text = self.pdf_to_text.extract_text_from_single_page(pdf = file_path, page_number=page_number)
+
         questions = self.text_to_questions.get_mcq_questions(n,text)
         return(questions)
     def generate_mcq_questions_page_interval(self,url,page_number, interval, n):
-        byte_array = self.url_to_pdf.download_file_from_url(url)
-        text = self.pdf_to_text.extract_text_from_interval(pdf = byte_array, page_number = page_number, interval = interval)
+        check, file_path = self.url_to_pdf.check_existing_files(url)
+        if not check:
+            file_path = self.url_to_pdf.download_file_from_url(url)
+        text = self.pdf_to_text.extract_text_from_single_page(pdf = file_path, page_number=page_number)
+        text = self.pdf_to_text.extract_text_from_interval(pdf = file_path, page_number=page_number, interval=interval)
+
+        # byte_array = self.url_to_pdf.download_file_from_url(url)
+        # text = self.pdf_to_text.extract_text_from_interval(pdf = byte_array, page_number = page_number, interval = interval)
         questions = self.text_to_questions.get_mcq_questions(n,text)
         return(questions)
 
@@ -254,7 +308,13 @@ if __name__ == '__main__':
 #  print(questions)
     generator = QuestionGenerator()
     # generator.generate_mcq_questions("https://drive.google.com/file/d/1TGEgTeDQAS2NyS36_KXv1ZyIcA0tFTvr/view?usp=drive_link")
-    questions = generator.generate_mcq_questions_all_text(url = "https://ncert.nic.in/textbook/pdf/kebo116.pdf", n = 10)
+    questions = generator.generate_mcq_questions_single_page(url = "https://api.jnanamarga.in/COURSE_EN/resource/uploads/APBiology-OP_5meoFaG-50-94.pdf", n = 10, page_number=5)
     print(questions)
+    # Example usage:
+    # pdf_url = "https://example.com/sample.pdf"
+    # save_folder = "local_folder"
+    # file_name = "downloaded_pdf.pdf"
+
+    # download_pdf(pdf_url, save_folder, file_name)
 
 
