@@ -138,27 +138,18 @@ class PDFtoText:
             for page_number in range(start_page, end_page + 1):
                 text += self.extract_text_from_single_page(pdf=pdf, page_number=page_number)
         return text
-
-class TexttoQuestions:
+class RAGImplementation:
     def __init__(self) -> None:
           from langchain.text_splitter import TokenTextSplitter
           from langchain.embeddings.openai import OpenAIEmbeddings
           self.text_splitter = TokenTextSplitter(chunk_size=1000, chunk_overlap=5,  length_function=len)
           self.embeddings = OpenAIEmbeddings()
-          self.prompt = """Create {n} expert level MCQ questions with 4 options and the correct answer on the following context. Strictly use the following format. Do not number questions,do not return anything else and do not include option number in answer. 
-    Question: "Question_here"                         
-    Options:
-    a)
-    b)
-    c)
-    d) 
-    Answer: "Answer here"          
-    """
+          
     def get_data_chunks(self,text):
         return self.text_splitter.split_text(text)
     def create_knowledge_hub(self,chunks):
         
-        from langchain.vectorstores import FAISS
+        from langchain_community.vectorstores import FAISS
         
         knowledge_hub = FAISS.from_texts(chunks, self.embeddings)
         return knowledge_hub
@@ -167,12 +158,23 @@ class TexttoQuestions:
             self,
             prompt: str,
             knowledge_hub: str,
-            chain_type: str = 'stuff',
+            chain_type: str = 'refine',
+            chain_name = 'retrievalqa',
+            chat_history = []
         ) -> str:    
+        """
+        Prompt: System Prompt 
+        knowledge_hub: Document Knowledfehub
+        Chain_type: 'refine','stuff','map_reduce'
+        chain_name: 'retrievalqa', 'conversationalretrievalchain'
+        chat_history : used with conversationalretrievalchain, it will be a list of tuples, looks like this 
+        [(question1, answer1), (question2, answer2)]
+        
+        """
         if knowledge_hub == "":
             return ""
-        from langchain.chains import RetrievalQA
-        from langchain.llms import OpenAI   
+        from langchain.chains import RetrievalQA,ConversationalRetrievalChain
+        from langchain_community.llms import OpenAI
 
         # chunks = get_data_chunks(data, chunk_size=chunk_size)  # create text chunks
         # knowledge_hub = create_knowledge_hub(chunks)  # create knowledge hub
@@ -180,16 +182,35 @@ class TexttoQuestions:
         retriever = knowledge_hub.as_retriever(
             search_type="similarity", search_kwargs={"k": 3}
         )
-        chain = RetrievalQA.from_chain_type(
-            llm=OpenAI(temperature=0.3, model_name="gpt-4"),
-            chain_type=chain_type,
-            retriever=retriever,
-            return_source_documents=True,
-        )
-        result = chain({"query": prompt})
+        if chain_name == 'conversationalretrievalchain':
+            chain = ConversationalRetrievalChain.from_llm(OpenAI(temperature=0.3, model_name="gpt-4"),
+                chain_type=chain_type,
+                retriever=retriever)
+            result = chain({"question": prompt, "chat_history": chat_history})
+            result = result['answer']
+        else:
+            chain = RetrievalQA.from_chain_type(
+                llm=OpenAI(temperature=0.3, model_name="gpt-4"),
+                chain_type=chain_type,
+                retriever=retriever,
+                return_source_documents=True,
+            )
+            result = chain({"query": prompt})
+            result = result['result']
 
-        return result['result']
-    
+        return result
+class TexttoQuestions(RAGImplementation):
+    def __init__(self) -> None:
+        super().__init__()
+        self.prompt = """Create {n} expert level MCQ questions with 4 options and the correct answer on the following context. Strictly use the following format. Do not number questions,do not return anything else and do not include option number in answer. 
+    Question: "Question_here"                         
+    Options:
+    a)
+    b)
+    c)
+    d) 
+    Answer: "Answer here"       
+    """
     def extract_questions_answers(self,response):
         # Extract the assistant's message
         # response = response.choices[0].message.content
@@ -236,23 +257,81 @@ class TexttoQuestions:
          prompt = self.prompt.format(n = n)
          knowledge_hub  = self.create_knowledge_hub(self.get_data_chunks(text))
          questions = self.get_answer_LLM(prompt=prompt, knowledge_hub=knowledge_hub)
-         print(questions)
+        #  print(questions)
+    
          try:
             return self.extract_questions_answers(questions)
          except Exception as e:
              raise Exception("Openai return type not a valid json", str(e))
-         
-         
-
-
-         
         
+
+
+         
+
+class ChatCaller(RAGImplementation):
+    def __init__(self) -> None:
+        super().__init__()     
+        self.prompt = """you are a helpful Chat with PDF agent which helps users answer questions from the given knowledge base. For out of context content try answering on your own. or simply say that the context does not provide the required data.
+        {question}
+        
+        """
+    def chat(self,text, question, chat_history = []):
+         prompt = self.prompt.format(question = question)
+         knowledge_hub  = self.create_knowledge_hub(self.get_data_chunks(text))
+         answer = self.get_answer_LLM(prompt=prompt, knowledge_hub=knowledge_hub, chain_name= 'conversationalretrievalchain', chat_history=chat_history)
+        #  print(answer)
+         try:
+            return answer.strip()
+         except Exception as e:
+             raise Exception("Error in chat With PDF", str(e)) 
+
+
+         
+class ChatWithPDF:
+    def __init__(self) -> None:
+        print("Intiailizing ChatWithPDF")
+        self.url_to_pdf = URLtoPDF()
+        self.pdf_to_text = PDFtoText()
+        self.rag = RAGImplementation()
+        self.chatcaller = ChatCaller()
+    def chat_with_whole_pdf(self,url,question,chat_history):
+        #check if the file is already downloaded
+        
+        check, file_path = self.url_to_pdf.check_existing_files(url)
+        if not check:
+            file_path = self.url_to_pdf.download_file_from_url(url)
+        text = self.pdf_to_text.extract_all_text(pdf=file_path)
+
+        answer = self.chatcaller.chat(text=text, chat_history=chat_history,question=question)
+        return(answer)
+    def chat_with_single_page(self,url,page_number, question, chat_history = []):
+        check, file_path = self.url_to_pdf.check_existing_files(url)
+        if not check:
+            file_path = self.url_to_pdf.download_file_from_url(url)
+        text = self.pdf_to_text.extract_text_from_single_page(pdf = file_path, page_number=page_number)
+
+        answer = self.chatcaller.chat(text=text, chat_history=chat_history,question=question)
+        return (answer)
+
+    def chat_with_page_interval(self,url,page_number, interval, question, chat_history= []):
+        check, file_path = self.url_to_pdf.check_existing_files(url)
+        if not check:
+            file_path = self.url_to_pdf.download_file_from_url(url)
+        text = self.pdf_to_text.extract_text_from_single_page(pdf = file_path, page_number=page_number)
+        text = self.pdf_to_text.extract_text_from_interval(pdf = file_path, page_number=page_number, interval=interval)
+
+        # byte_array = self.url_to_pdf.download_file_from_url(url)
+        # text = self.pdf_to_text.extract_text_from_interval(pdf = byte_array, page_number = page_number, interval = interval)
+        answer = self.chatcaller.chat(text=text, chat_history=chat_history,question=question)
+        return (answer)
+
 
 class QuestionGenerator():
     def __init__(self) -> None:
         print("initializing generator")
         self.url_to_pdf = URLtoPDF()
         self.pdf_to_text = PDFtoText()
+        self.rag = RAGImplementation()
         self.text_to_questions = TexttoQuestions()
     def generate_mcq_questions_all_text(self,url,n):
         #check if the file is already downloaded
@@ -306,15 +385,17 @@ def URLtoQuestions(url):
 if __name__ == '__main__':
 #  questions = URLtoQuestions("https://drive.google.com/file/d/1TGEgTeDQAS2NyS36_KXv1ZyIcA0tFTvr/view?usp=drive_link")
 #  print(questions)
-    generator = QuestionGenerator()
-    # generator.generate_mcq_questions("https://drive.google.com/file/d/1TGEgTeDQAS2NyS36_KXv1ZyIcA0tFTvr/view?usp=drive_link")
-    questions = generator.generate_mcq_questions_single_page(url = "https://api.jnanamarga.in/COURSE_EN/resource/uploads/APBiology-OP_5meoFaG-50-94.pdf", n = 10, page_number=5)
-    print(questions)
+    # generator = QuestionGenerator()
+    # # generator.generate_mcq_questions("https://drive.google.com/file/d/1TGEgTeDQAS2NyS36_KXv1ZyIcA0tFTvr/view?usp=drive_link")
+    # questions = generator.generate_mcq_questions_single_page(url = "https://api.jnanamarga.in/COURSE_EN/resource/uploads/APBiology-OP_5meoFaG-50-94.pdf", n = 10, page_number=5)
+    # print(questions)
     # Example usage:
     # pdf_url = "https://example.com/sample.pdf"
     # save_folder = "local_folder"
     # file_name = "downloaded_pdf.pdf"
 
     # download_pdf(pdf_url, save_folder, file_name)
-
+    chatwithpdf = ChatWithPDF()
+    answer =chatwithpdf.chat_with_whole_pdf("https://api.jnanamarga.in/COURSE_EN/resource/uploads/APBiology-OP_5meoFaG-50-94.pdf", question = "Is this annwer correct?", chat_history=[("what are the 2 regions atom is composed of?", "An atom is composed of two regions: the nucleus, which is in the center of the atom and contains protons and neutrons, and the outermost region of the atom which holds its electrons in orbit around the nucleus.")])
+    print(answer)
 

@@ -3,7 +3,6 @@ from question_generator import QuestionGenerator
 from enum import Enum
 
 app = Flask(__name__)
-generator = QuestionGenerator()
 
 class Modes(Enum):
     CHOICE1 = "all"
