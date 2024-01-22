@@ -25,13 +25,17 @@ class PageSourceScraper:
             self.driver.quit()
     
     def download_and_parse(self,url):
-        print("executing")
         session = HTMLSession()
+
         response = session.get(url)
-        response.html.render(timeout = 60)
+
+        # response.html.render(timeout = 20)
 
         # Get the rendered HTML content
         page_source = response.html.html
+        # Close the HTML session
+
+        session.close()
 
         # Use BeautifulSoup to parse the HTML
         return BeautifulSoup(page_source, 'html.parser')

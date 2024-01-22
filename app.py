@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from question_generator import QuestionGenerator, ChatWithPDF
+from PDFCrawler import PDFURLCrawler
 from enum import Enum
 
 app = Flask(__name__)
@@ -68,6 +69,34 @@ def generate_questions():
             'message': message,
             'data': questions
         })
+@app.route("/crawl", methods=["POST"])
+def crawl_urls():
+    data = request.json
+    pdf_urls = []
+    status = True
+    reason = ""
+    url = data["url"]
+    depth = data.get('depth', 1)
+    if request.method == 'POST':
+
+        try:
+            
+            pdf_urls = crawler.crawl(url=url, limit = depth, base_url=url)
+            
+        except Exception as e:
+            reason = "Exception " + str(e)
+
+        if status == False:
+            message = "Success"
+        else:
+            message = "Failure"
+
+        return jsonify({
+            'error': status,
+            'reason': reason,
+            'message': message,
+            'data': pdf_urls
+        })
 @app.route("/chat", methods=["POST"])
 def chatwithpdf():
     data = request.json
@@ -130,4 +159,5 @@ def hello_world():
 if __name__ == "__main__":
     generator = QuestionGenerator()
     chat = ChatWithPDF()
+    crawler = PDFURLCrawler()
     app.run(debug=True, host='127.0.0.1', port=8000)
