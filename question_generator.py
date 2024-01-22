@@ -22,6 +22,11 @@
 
 import requests
 import os
+from langchain.text_splitter import TokenTextSplitter
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.vectorstores import FAISS
+from langchain.chains import RetrievalQA,ConversationalRetrievalChain
+from langchain.llms import OpenAI 
 
 # text_splitter = TokenTextSplitter(chunk_size=10, chunk_overlap=0)
 
@@ -140,16 +145,18 @@ class PDFtoText:
         return text
 class RAGImplementation:
     def __init__(self) -> None:
-          from langchain.text_splitter import TokenTextSplitter
-          from langchain.embeddings.openai import OpenAIEmbeddings
+          
+          
           self.text_splitter = TokenTextSplitter(chunk_size=1000, chunk_overlap=5,  length_function=len)
           self.embeddings = OpenAIEmbeddings()
+        #   self.client  = OpenAI()
+
           
     def get_data_chunks(self,text):
         return self.text_splitter.split_text(text)
     def create_knowledge_hub(self,chunks):
         
-        from langchain_community.vectorstores import FAISS
+        
         
         knowledge_hub = FAISS.from_texts(chunks, self.embeddings)
         return knowledge_hub
@@ -173,8 +180,6 @@ class RAGImplementation:
         """
         if knowledge_hub == "":
             return ""
-        from langchain.chains import RetrievalQA,ConversationalRetrievalChain
-        from langchain_community.llms import OpenAI
 
         # chunks = get_data_chunks(data, chunk_size=chunk_size)  # create text chunks
         # knowledge_hub = create_knowledge_hub(chunks)  # create knowledge hub
@@ -199,6 +204,9 @@ class RAGImplementation:
             result = result['result']
 
         return result
+
+
+
 class TexttoQuestions(RAGImplementation):
     def __init__(self) -> None:
         super().__init__()
@@ -286,100 +294,73 @@ class ChatCaller(RAGImplementation):
              raise Exception("Error in chat With PDF", str(e)) 
 
 
-         
-class ChatWithPDF:
+
+class BaseURLtoSomething:
     def __init__(self) -> None:
-        print("Intiailizing ChatWithPDF")
+        print("initializing base constructor")
         self.url_to_pdf = URLtoPDF()
         self.pdf_to_text = PDFtoText()
-        self.rag = RAGImplementation()
+    def whole_text(self,url):
+        check, file_path = self.url_to_pdf.check_existing_files(url)
+        if not check:
+            file_path = self.url_to_pdf.download_file_from_url(url)
+        return self.pdf_to_text.extract_all_text(pdf=file_path)
+    
+    def single_page(self, url, page_number):
+        check, file_path = self.url_to_pdf.check_existing_files(url)
+        if not check:
+            file_path = self.url_to_pdf.download_file_from_url(url)
+        return self.pdf_to_text.extract_text_from_single_page(pdf = file_path, page_number=page_number)
+    def page_interval(self, url, page_number, interval):
+        check, file_path = self.url_to_pdf.check_existing_files(url)
+        if not check:
+            file_path = self.url_to_pdf.download_file_from_url(url)
+        return self.pdf_to_text.extract_text_from_interval(pdf = file_path, page_number=page_number, interval=interval)
+
+
+
+
+
+
+class ChatWithPDF(BaseURLtoSomething):
+    def __init__(self) -> None:
+        print("Intiailizing ChatWithPDF") 
+        super().__init__()
         self.chatcaller = ChatCaller()
     def chat_with_whole_pdf(self,url,question,chat_history):
         #check if the file is already downloaded
-        
-        check, file_path = self.url_to_pdf.check_existing_files(url)
-        if not check:
-            file_path = self.url_to_pdf.download_file_from_url(url)
-        text = self.pdf_to_text.extract_all_text(pdf=file_path)
-
+        text = self.whole_text(url)
         answer = self.chatcaller.chat(text=text, chat_history=chat_history,question=question)
         return(answer)
-    def chat_with_single_page(self,url,page_number, question, chat_history = []):
-        check, file_path = self.url_to_pdf.check_existing_files(url)
-        if not check:
-            file_path = self.url_to_pdf.download_file_from_url(url)
-        text = self.pdf_to_text.extract_text_from_single_page(pdf = file_path, page_number=page_number)
-
+    def chat_with_single_page(self, url,page_number, question, chat_history = []):
+        text = self.single_page(url, page_number)
         answer = self.chatcaller.chat(text=text, chat_history=chat_history,question=question)
         return (answer)
 
     def chat_with_page_interval(self,url,page_number, interval, question, chat_history= []):
-        check, file_path = self.url_to_pdf.check_existing_files(url)
-        if not check:
-            file_path = self.url_to_pdf.download_file_from_url(url)
-        text = self.pdf_to_text.extract_text_from_single_page(pdf = file_path, page_number=page_number)
-        text = self.pdf_to_text.extract_text_from_interval(pdf = file_path, page_number=page_number, interval=interval)
-
-        # byte_array = self.url_to_pdf.download_file_from_url(url)
-        # text = self.pdf_to_text.extract_text_from_interval(pdf = byte_array, page_number = page_number, interval = interval)
+        text = self.page_interval(url, page_number, interval)
         answer = self.chatcaller.chat(text=text, chat_history=chat_history,question=question)
         return (answer)
 
 
-class QuestionGenerator():
+class QuestionGenerator(BaseURLtoSomething):
     def __init__(self) -> None:
         print("initializing generator")
-        self.url_to_pdf = URLtoPDF()
-        self.pdf_to_text = PDFtoText()
-        self.rag = RAGImplementation()
+        super().__init__()
         self.text_to_questions = TexttoQuestions()
     def generate_mcq_questions_all_text(self,url,n):
         #check if the file is already downloaded
-        
-        check, file_path = self.url_to_pdf.check_existing_files(url)
-        if not check:
-            file_path = self.url_to_pdf.download_file_from_url(url)
-        text = self.pdf_to_text.extract_all_text(pdf=file_path)
-
+        text = self.whole_text(url)
         questions = self.text_to_questions.get_mcq_questions(n,text)
         return(questions)
     def generate_mcq_questions_single_page(self,url,page_number, n):
-        check, file_path = self.url_to_pdf.check_existing_files(url)
-        if not check:
-            file_path = self.url_to_pdf.download_file_from_url(url)
-        text = self.pdf_to_text.extract_text_from_single_page(pdf = file_path, page_number=page_number)
-
+        text = self.single_page(url, page_number)
         questions = self.text_to_questions.get_mcq_questions(n,text)
         return(questions)
     def generate_mcq_questions_page_interval(self,url,page_number, interval, n):
-        check, file_path = self.url_to_pdf.check_existing_files(url)
-        if not check:
-            file_path = self.url_to_pdf.download_file_from_url(url)
-        text = self.pdf_to_text.extract_text_from_single_page(pdf = file_path, page_number=page_number)
-        text = self.pdf_to_text.extract_text_from_interval(pdf = file_path, page_number=page_number, interval=interval)
-
-        # byte_array = self.url_to_pdf.download_file_from_url(url)
-        # text = self.pdf_to_text.extract_text_from_interval(pdf = byte_array, page_number = page_number, interval = interval)
+        text = self.page_interval(url, page_number, interval)
         questions = self.text_to_questions.get_mcq_questions(n,text)
         return(questions)
-
-
-    
-
-        
-
-
-def URLtoQuestions(url):
-    uPDF = URLtoPDF()
-    pdf = uPDF.download_file_from_url(url)
-    pdftext = PDFtoText(pdf)
-    text = pdftext.extract_all_text()
-    texttoquestions  = TexttoQuestions(text)
-    questions = texttoquestions.get_mcq_questions(10)
-    return questions
-
-
-        
 
           
 if __name__ == '__main__':
