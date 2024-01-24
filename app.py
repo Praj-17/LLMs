@@ -82,6 +82,7 @@ def crawl_urls():
         try:
             
             pdf_urls = crawler.crawl(url=url, limit = depth, base_url=url)
+            status = True
             
         except Exception as e:
             reason = "Exception " + str(e)

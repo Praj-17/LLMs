@@ -140,7 +140,7 @@ endpoint = `/chat`
 {
     "error": false,
     "message": "Success",
-    "reason": "Exception name 'questions' is not defined",
+    "reason": "",
     "response_data": {
         "answer": "This page is primarily about the functions and structures of the kidney, with a focus on the processes of filtration, reabsorption, and secretion. It details how the glomerulus filters blood and forms filtrate in the Bowman’s capsule, and how reabsorption of the filtrate takes place in different parts of the nephrons. It also discusses the role of the juxta glomerular apparatus (JGA) in regulating the Glomerular Filtration Rate (GFR). The page further explains the process of dialysis and kidney transplantation as methods for treating kidney failure. It also defines certain kidney conditions such as renal calculi and glomerulonephritis. The page includes a detailed explanation of the function of the tubules, including the Proximal Convoluted Tubule (PCT), Henle’s Loop, Distal Convoluted Tubule (DCT), and Collecting Duct. It also discusses the mechanism of concentration of the filtrate, particularly the role of Henle’s loop and vasa recta in producing a concentrated urine. Lastly, the page includes exercises and questions for further understanding of the topic.",
         "guid": 0
@@ -148,7 +148,52 @@ endpoint = `/chat`
     "status": 200
 }
 ```
-    
+endpoint = `/crawl`
+
+### Input Parameters 
+
+1. url = A string of `public` url for a PDF file hosted on a google drive  
+2. depth = A number indicating into how much depth of the webpage you want to go. Depth means a page contains 10 links and depth is 3, it means it will also crawl those 10 links, and links within them.
+
+
+#### input parameters
+```
+{
+    "url": "https://investor.fb.com/financials/",
+    "depth": 1
+}
+```
+
+#### Output format
+
+```
+{
+    "data": [
+        "https://www.abc.xyz/assets/d4/4f/a48b94d548d0b2fdc029a95e8c63/2022-alphabet-annual-report.pdf",
+        "https://ai.google/static/documents/ai-principles-2023-progress-update.pdf",
+        "https://www.abc.xyz/assets/9a/bd/838c917c4b4ab21f94e84c3c2c65/goog-10-k-q4-2022.pdf",
+        "https://www.abc.xyz/assets/c4/d3/fb142c0f4a78a278d96ad5597ad9/2022q4-alphabet-earnings-release.pdf",
+        "https://www.abc.xyz/assets/b1/d0/c66d744443e698fd63a3ae81e12a/2022q3-alphabet-earnings-release.pdf",
+        "https://www.abc.xyz/assets/a7/5b/9e5ae0364b12b4c883f3cf748226/goog-exhibit-99-1-q1-2023-19.pdf",
+        "https://www.abc.xyz/assets/31/25/fb7b6946475d96b7fa4b9c3e2149/2022q1-alphabet-earnings-release.pdf",
+        "https://www.abc.xyz/assets/20/ef/844a05b84b6f9dbf2c3592e7d9c7/2023q2-alphabet-earnings-release.pdf",
+        "https://www.abc.xyz/assets/4a/f6/411d938e492e9b66749e2ba1984f/goog-10-q-q2-2023-4.pdf",
+        "https://www.abc.xyz/assets/c2/3e/0d6d568e4f56a1d14ca6b70c3443/goog-10-q-q3-2023.pdf",
+        "https://www.abc.xyz/assets/0d/4a/646d28c945aba76a5eeeba68e686/2022q2-alphabet-earnings-release.pdf",
+        "https://www.abc.xyz/assets/86/99/68122c444c4a93d2228e21ecc16b/20230426-alphabet-10q.pdf",
+        "https://www.abc.xyz/assets/fa/0e/606be5234d8c895e5e167d38811f/20220427-alphabet-10q.pdf",
+        "https://www.abc.xyz/assets/4a/3e/3e08902c4a45b5cf530e267cf818/2023q3-alphabet-earnings-release.pdf",
+        "https://www.abc.xyz/assets/f2/48/c0bc469747b691dd301e91cb10cc/20220726-alphabet-10q.pdf",
+        "https://www.abc.xyz/assets/06/a6/2ea9850a4b4584c07fac2c1b517d/20221025-alphabet-10q.pdf"
+    ],
+    "error": true,
+    "message": "Sucess",
+    "reason": ""
+}
+```
+
+
+
 
 
 
