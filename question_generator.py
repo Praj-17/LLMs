@@ -113,7 +113,7 @@ class PDFtoText:
         all_text = ''
 
         # Iterate through all pages
-        for page_number in range(self.page_count):
+        for page_number in range(self.page_count) :
             # Get the page
             page = self.pdf[page_number]
 
