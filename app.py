@@ -2,6 +2,10 @@ from flask import Flask, request, jsonify
 from question_generator import QuestionGenerator, ChatWithPDF
 from PDFCrawler import PDFURLCrawler
 from enum import Enum
+import warnings
+
+# Silence all warnings
+warnings.filterwarnings("ignore")
 
 app = Flask(__name__)
 
@@ -81,8 +85,12 @@ def crawl_urls():
 
         try:
             
-            pdf_urls = crawler.crawl(url=url, limit = depth, base_url=url)
-            status = True
+            status_code = crawler.check_url_status(url)
+            if status_code == 403 or status_code == 400:
+                reason = f"Forbidden URL!! Try another URL. Response code {status_code}"
+            else:
+                pdf_urls = crawler.crawl(url=url, limit = depth, base_url=url)
+                status = False
             
         except Exception as e:
             reason = "Exception " + str(e)
@@ -107,13 +115,14 @@ def chatwithpdf():
     status = True
     reason = ""
     url = data["url"]
-    page_no = 0
+    interval = 0
     chat_history = []
     if request.method == 'POST':
 
         try:
             chat_history = data.get('chat_history', [])
             question = data.get("question", "")
+            interval = data.get("interval", 1)
             if data["mode"] == 'all':
                 answer = chat.chat_with_whole_pdf(url=url, question=question, chat_history=chat_history)
                 status = False
@@ -122,8 +131,11 @@ def chatwithpdf():
                     answer = chat.chat_with_single_page(url=url, page_number=data["page_number"], question=question, chat_history=chat_history)
                     status = False
                 elif data["mode"] == 'interval':
-                    answer = chat.chat_with_single_page(url=url, page_number=data["page_number"],  interval=data["interval"], question=question, chat_history=chat_history)
-                    status = False
+                    if data['interval']:
+                        answer = chat.chat_with_page_interval(url=url, page_number=data["page_number"],  interval=interval, question=question, chat_history=chat_history)
+                        status = False
+                    else:
+                        reason = "param 'interval' nor provided, defaulting to 1"
                 else:
                     reason = "Please provide  a correct mode"
             else:
@@ -147,6 +159,7 @@ def chatwithpdf():
             'error': status,
             # 'reason': reason,
             'message': message,
+             'reason': reason,
             'status': 200,
             'response_data': response_data
         })

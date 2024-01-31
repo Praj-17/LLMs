@@ -33,7 +33,11 @@ class PDFURLCrawler(PageSourceScraper):
     'https://www.reddit.com',
     'https://www.tiktok.com',
 ]
+        self.wrong_status_codes = [403,400]
     
+    def check_url_status(self,url):
+        response = self.session.get(url, allow_redirects=True)
+        return response.status_code
     def crawl(self,url, limit, base_url):
             response = None
             if limit <= 0:
@@ -52,7 +56,6 @@ class PDFURLCrawler(PageSourceScraper):
                 if response:
                     if response.status_code == 200:
                         soup = self.download_and_parse(url)
-                        print(soup)
                         anchor_tags = soup.find_all('a')
                         for anchor in anchor_tags:
                             
@@ -75,9 +78,15 @@ class PDFURLCrawler(PageSourceScraper):
                                         self.crawl(absolute_link, limit - 1, base_url)
                                 if href.startswith('https://'):
                                     self.crawl(href, limit - 1, base_url)
+
+                    elif response.status_code in self.wrong_status_codes:
+                        print("Request Forbidden!")
+                        print("Problematic URL: ", url)
                     else:
                         print("Stopped because invalid URL")
                         print("Problematic URL: ", url)
+                    
+                
             return list(set(self.pdfs))
 
 if __name__ == "__main__":
